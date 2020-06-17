@@ -18,8 +18,8 @@ import numpy as np
 import os
 
 def build_gan(options):
-    generator = UNet(num_input_channels=2*options.n_image_channels,
-                     num_output_channels=options.n_time_bins * 2,
+    generator = UNet(num_input_channels=2*options.n_image_channels, #一次输入两张图片
+                     num_output_channels=options.n_time_bins * 2,  
                      skip_type='concat',
                      activation='relu',
                      num_encoders=4,
