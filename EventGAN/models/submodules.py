@@ -7,14 +7,14 @@ class ConvLayer(nn.Module):
                  activation='LeakyReLU', norm=None, init_method=None, std=1., sn=False):
         super(ConvLayer, self).__init__()
 
-        bias = False if norm == 'BN' else True
+        bias = False if norm == 'BN' else True  # 后边有batchnorm层，不需要设置bias,因为会将输出归一化，设置偏置没有用
         self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding,
                                 bias=bias)
         if sn:
-            self.conv2d = SpectralNorm(self.conv2d)
+            self.conv2d = SpectralNorm(self.conv2d)  #谱归一化
         if activation is not None:
             if activation == 'LeakyReLU':
-                self.activation = getattr(torch.nn, activation, 'LeakyReLU')
+                self.activation = getattr(torch.nn, activation, 'LeakyReLU') #从torch.nn中返回activation属性，如果不存在，则返回字符串'LeakyReLU'
                 self.activation = self.activation()
             else:
                 self.activation = getattr(torch, activation, activation)
@@ -25,7 +25,7 @@ class ConvLayer(nn.Module):
         if norm == 'BN':
             self.norm_layer = nn.BatchNorm2d(out_channels, momentum=0.01)
         elif norm == 'IN':
-            self.norm_layer = nn.InstanceNorm2d(out_channels, track_running_stats=True)
+            self.norm_layer = nn.InstanceNorm2d(out_channels, track_running_stats=True) #每个sample,每个通道进行Norm
 
     def forward(self, x):
         out = self.conv2d(x)
@@ -81,6 +81,6 @@ class ResidualBlock(nn.Module):
         if self.downsample:
             residual = self.downsample(x)
 
-        out += residual
+        out += residual  #卷积前矩阵与卷积后矩阵相加
         out = self.relu(out)
         return out
