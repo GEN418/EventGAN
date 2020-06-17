@@ -14,19 +14,19 @@ class NLayerDiscriminator(nn.Module):
             norm_layer      -- normalization layer
         """
         super(NLayerDiscriminator, self).__init__()
-        use_bias = norm_layer != nn.BatchNorm2d
+        use_bias = norm_layer != nn.BatchNorm2d  #存在batchnorm层即将偏置置为0
 
         kw = 4
         padw = 1
         sequence = [nn.Conv2d(
-            input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
-        nf_mult = 1
-        nf_mult_prev = 1
+            input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]  # negative slope, in_place
+        nf_mult = 1      # 每层输出num_channel的乘法因子, 即本层num_filter的乘法因子
+        nf_mult_prev = 1 # 每层输入num_channel的乘法因子, 即上一层num_filter的乘法因子
         for n in range(1, n_layers):  # gradually increase the number of filters
             nf_mult_prev = nf_mult
-            nf_mult = min(2 ** n, 8)
-            sequence += [nn.Conv2d(ndf * nf_mult_prev,
-                                  ndf * nf_mult,
+            nf_mult = min(2 ** n, 8) # 2,4
+            sequence += [nn.Conv2d(ndf * nf_mult_prev, #64*1，64*2
+                                  ndf * nf_mult, #64*2,64*4
                                   kernel_size=kw,
                                   stride=2,
                                   padding=padw,
@@ -34,15 +34,15 @@ class NLayerDiscriminator(nn.Module):
             sequence += [ nn.LeakyReLU(0.2, True) ]
         nf_mult_prev = nf_mult
         nf_mult = min(2 ** n_layers, 8)
-        sequence += [nn.Conv2d(ndf * nf_mult_prev,
-                               ndf * nf_mult,
+        sequence += [nn.Conv2d(ndf * nf_mult_prev, #64*4
+                               ndf * nf_mult,      #64*8
                                kernel_size=kw,
                                stride=1,
                                padding=padw,
                                bias=use_bias)]
 
         sequence += [ nn.LeakyReLU(0.2, True) ]
-        sequence += [nn.Conv2d(ndf * nf_mult,
+        sequence += [nn.Conv2d(ndf * nf_mult,  #64*8
                                1,
                                kernel_size=kw,
                                stride=1,
