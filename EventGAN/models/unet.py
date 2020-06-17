@@ -37,7 +37,7 @@ class UNet(nn.Module):
 
         self.activation_name = self.activation
         if self.activation is not None:
-            self.activation = getattr(torch, self.activation, 'sigmoid')
+            self.activation = getattr(torch, self.activation, 'sigmoid') # 1.object 2.attribute 3.default
 
         # Build layers
         # N x C x H x W -> N x 32 x H x W
@@ -62,14 +62,14 @@ class UNet(nn.Module):
         summary += "Total Parameters - {}\n".format(utils.num_trainable_parameters(self))
         return summary
     
-    def init_weights(self):
+    def init_weights(self): # 卷积与内卷积层，凯明初始化权重，偏置如果存在，初始化为0；bn层，权重初始化为1，bias初始化为0.
         for m in self.modules():
-            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
-                nn.init.kaiming_normal_(m.weight, 10.)
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d): 
+                nn.init.kaiming_normal_(m.weight, 10.) 
                 #nn.init.normal_(m.weight, mean=0.0, std=1e-3)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
+            elif isinstance(m, nn.BatchNorm2d): 
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
@@ -81,14 +81,15 @@ class UNet(nn.Module):
         encoder_output_sizes = [self.base_num_channels * pow(2, i + 1) \
                                 for i in range(self.num_encoders)]
         
-        encoders = nn.ModuleList()
-        for input_size, output_size in zip(encoder_input_sizes, encoder_output_sizes):
+        encoders = nn.ModuleList() #没有定义一个网络，它只是将不同的模块储存在一起，这些模块之间并没有什么先后顺序可言
+        for input_size, output_size in zip(encoder_input_sizes, encoder_output_sizes):  #zip() 函数用于将可迭代的对象作为参数，将对象中对应的元素打包成一个个元组，
+                                                                                        #然后返回由这些元组组成的列表。
             encoders.append(ConvLayer(input_size, output_size, kernel_size=3,
                                       stride=2, padding=1, norm=self.norm, sn=False))
 
         return encoders
                 
-    def build_resblocks(self):
+    def build_resblocks(self):    #输入经encoder编码的数据，通道数达到encoder输出通道数，整个过程通道数，图片大小不变，使用谱归一化
         resblocks = nn.ModuleList()
         for i in range(self.num_residual_blocks):
             resblocks.append(ResidualBlock(self.max_num_channels,
@@ -107,7 +108,7 @@ class UNet(nn.Module):
                          activation=self.activation_name)
         return pred
                 
-    def build_decoders(self):
+    def build_decoders(self):  #decoder各层输入通道数
         decoder_input_sizes = list(reversed([self.base_num_channels * pow(2, i+1) \
                                              for i in range(self.num_encoders)]))
 
@@ -126,7 +127,7 @@ class UNet(nn.Module):
             first_layer = False
         return decoders
 
-    def build_multiscale_prediction_layers(self):
+    def build_multiscale_prediction_layers(self): # decoder每一层均给一个输出
         pred_sizes = list(reversed([self.base_num_channels * pow(2, i) \
                                              for i in range(self.num_encoders)]))
         
@@ -152,7 +153,7 @@ class UNet(nn.Module):
         skip_connections = []
         # encoder
         for i, encoder in enumerate(self.encoders):
-            skip_connections.append(x)
+            skip_connections.append(x)  # 记录encoder每层输出，encoder最后一层输出不记
             x = encoder(x)
 
 
@@ -173,7 +174,7 @@ class UNet(nn.Module):
             x = decoder(x)
             if self.multi:
                 all_pred.append(self.pred_layers[i](x))
-                x = self.apply_skip_connection(x, all_pred[-1])
+                x = self.apply_skip_connection(x, all_pred[-1]) # 将该层输出与decoder结果级联起来，之后再与encoder层结果级联，作为下一层输入
 
         if self.multi:
             return all_pred
